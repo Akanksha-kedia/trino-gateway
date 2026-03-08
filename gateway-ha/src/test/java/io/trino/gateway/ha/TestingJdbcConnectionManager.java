@@ -17,11 +17,14 @@ import io.trino.gateway.ha.config.DataStoreConfiguration;
 import io.trino.gateway.ha.module.HaGatewayProviderModule;
 import io.trino.gateway.ha.persistence.JdbcConnectionManager;
 import org.jdbi.v3.core.Jdbi;
+import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static io.trino.gateway.ha.util.TestcontainersUtils.createPostgreSqlContainer;
 
 public final class TestingJdbcConnectionManager
 {
@@ -38,6 +41,24 @@ public final class TestingJdbcConnectionManager
 
     public static JdbcConnectionManager createTestingJdbcConnectionManager(DataStoreConfiguration config)
     {
+        Jdbi jdbi = HaGatewayProviderModule.createJdbi(config);
+        return new JdbcConnectionManager(jdbi, config);
+    }
+
+    public static JdbcConnectionManager createTestingJdbcConnectionManager()
+    {
+        PostgreSQLContainer postgres = createPostgreSqlContainer();
+        postgres.start();
+        
+        DataStoreConfiguration config = new DataStoreConfiguration(
+                postgres.getJdbcUrl(),
+                postgres.getUsername(),
+                postgres.getPassword(),
+                postgres.getDriverClassName(),
+                true,
+                4,
+                false);
+        
         Jdbi jdbi = HaGatewayProviderModule.createJdbi(config);
         return new JdbcConnectionManager(jdbi, config);
     }
